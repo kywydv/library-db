@@ -1,0 +1,184 @@
+Table roles {
+  id int [pk, increment]
+  name varchar(50) [not null, unique]
+}
+
+Table users {
+  id int [pk, increment]
+  role_id int [not null, ref: > roles.id]
+  username varchar(50) [not null, unique]
+  password_hash varchar(255) [not null]
+  full_name varchar(150) [not null]
+  email varchar(150) [not null, unique]
+  is_deleted boolean [not null, default: false]
+  deleted_at datetime
+  created_at datetime [not null, default: `now()`]
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table membership_types {
+  id int [pk, increment]
+  name varchar(50) [not null, unique]
+  max_books int [not null]
+  loan_days int [not null]
+  monthly_fee decimal(10,2) [not null, default: 0]
+}
+
+Table members {
+  id int [pk, increment]
+  membership_type_id int [not null, ref: > membership_types.id]
+  card_number varchar(20) [not null, unique]
+  full_name varchar(150) [not null]
+  phone varchar(20)
+  email varchar(150)
+  address varchar(255)
+  registered_at date [not null]
+  expires_at date
+  is_deleted boolean [not null, default: false]
+  deleted_at datetime
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table authors {
+  id int [pk, increment]
+  full_name varchar(150) [not null]
+  birth_year int
+  country varchar(60)
+}
+
+Table publishers {
+  id int [pk, increment]
+  name varchar(150) [not null, unique]
+  city varchar(80)
+}
+
+Table categories {
+  id int [pk, increment]
+  name varchar(100) [not null, unique]
+  parent_id int [ref: > categories.id]
+}
+
+Table books {
+  id int [pk, increment]
+  publisher_id int [not null, ref: > publishers.id]
+  category_id int [not null, ref: > categories.id]
+  title varchar(255) [not null]
+  isbn varchar(20) [unique]
+  publish_year int
+  pages int
+  description text
+  is_deleted boolean [not null, default: false]
+  deleted_at datetime
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table book_authors {
+  book_id int [not null, ref: > books.id]
+  author_id int [not null, ref: > authors.id]
+  indexes {
+    (book_id, author_id) [pk]
+  }
+}
+
+Table locations {
+  id int [pk, increment]
+  hall varchar(50) [not null]
+  shelf varchar(20) [not null]
+}
+
+Table book_copies {
+  id int [pk, increment]
+  book_id int [not null, ref: > books.id]
+  location_id int [not null, ref: > locations.id]
+  inventory_number varchar(30) [not null, unique]
+  status varchar(20) [not null, default: 'available', note: 'available / loaned / reserved / lost']
+  acquired_at date
+  is_deleted boolean [not null, default: false]
+  deleted_at datetime
+}
+
+Table loans {
+  id int [pk, increment]
+  copy_id int [not null, ref: > book_copies.id]
+  member_id int [not null, ref: > members.id]
+  issued_by int [not null, ref: > users.id]
+  loaned_at datetime [not null, default: `now()`]
+  due_date date [not null]
+  returned_at datetime
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table reservations {
+  id int [pk, increment]
+  book_id int [not null, ref: > books.id]
+  member_id int [not null, ref: > members.id]
+  reserved_at datetime [not null, default: `now()`]
+  expires_at datetime [not null]
+  status varchar(20) [not null, default: 'active']
+}
+
+Table fines {
+  id int [pk, increment]
+  loan_id int [not null, ref: > loans.id]
+  amount decimal(10,2) [not null]
+  reason varchar(255)
+  is_paid boolean [not null, default: false]
+  created_at datetime [not null, default: `now()`]
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table services {
+  id int [pk, increment]
+  name varchar(100) [not null, unique]
+  description varchar(255)
+  price decimal(10,2) [not null]
+  is_deleted boolean [not null, default: false]
+  deleted_at datetime
+}
+
+Table service_orders {
+  id int [pk, increment]
+  service_id int [not null, ref: > services.id]
+  member_id int [not null, ref: > members.id]
+  processed_by int [not null, ref: > users.id]
+  quantity int [not null, default: 1]
+  total_price decimal(10,2) [not null]
+  ordered_at datetime [not null, default: `now()`]
+  status varchar(20) [not null, default: 'new']
+  updated_at datetime
+  updated_by int [ref: > users.id]
+}
+
+Table payments {
+  id int [pk, increment]
+  member_id int [not null, ref: > members.id]
+  fine_id int [ref: > fines.id]
+  service_order_id int [ref: > service_orders.id]
+  amount decimal(10,2) [not null]
+  method varchar(20) [not null, note: 'cash / card']
+  paid_at datetime [not null, default: `now()`]
+}
+
+Table events {
+  id int [pk, increment]
+  organizer_id int [not null, ref: > users.id]
+  title varchar(150) [not null]
+  description text
+  starts_at datetime [not null]
+  capacity int [not null]
+}
+
+Table event_registrations {
+  id int [pk, increment]
+  event_id int [not null, ref: > events.id]
+  member_id int [not null, ref: > members.id]
+  registered_at datetime [not null, default: `now()`]
+  indexes {
+    (event_id, member_id) [unique]
+  }
+}
